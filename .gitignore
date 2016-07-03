@@ -10,5 +10,6 @@ project/plugins/project/
 #ignore intellij stuff
 *.idea
 *.iml
+.idea
 
 *.class
