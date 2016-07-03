@@ -1,0 +1,14 @@
+# ignore sbt stuff
+.cache/
+.history/
+.lib/
+target/
+project/boot/
+project/plugins/project/
+
+
+#ignore intellij stuff
+*.idea
+*.iml
+
+*.class
