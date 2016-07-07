@@ -1,5 +1,6 @@
 import fastparse.noApi._
 import WsApi._
+import scala.io.Source
 
 object expresion {
   val var_decl = P(lexical.variable ~ "=" ~ (((lexical.string | lexical.identifier) | (lexical.number)) ~ (maths.expr).rep.?) ~ ";" ~ End).!
@@ -8,16 +9,16 @@ object expresion {
   val calc: Parser[Any] = P(lexical.number.! ~ (lexical.arithOperator.! ~ lexical.number.!).rep.? | "")
   val vasign = P(lexical.identifier ~ lexical.asignOperator ~ maths.expr | lexical.string | lexical.identifier ~ ";")
 
-  def foo(i: Int): String = "The number is " + i
+  //def foo(i: Int): String = "The number is " + i
 
-  val comment: Parser[Unit] = P("me").rep
+  
   val binary = P(("0" | "1").rep.!)
   val binaryNum = P(binary.map(Integer.parseInt(_, 2)))
   val output = {
-    val alert = P("window.alert(" ~ maths.expr ~ ");" ~ End)
-    val write = P("document.write(" ~ maths.expr ~ ");" ~ End)
-    val innerHtml = P("document.getElementById(" ~ lexical.string ~ ").innerHTML = " ~ maths.expr ~ ";" ~ End)
-    val log = P("console.log(" ~ maths.expr ~ ");" ~ End)
+    val alert = P("window.alert(" ~ maths.expr ~ ");")
+    val write = P("document.write(" ~ maths.expr ~ ");")
+    val innerHtml = P("document.getElementById(" ~ lexical.string ~ ").innerHTML = " ~ maths.expr ~ ";")
+    val log = P("console.log(" ~ maths.expr ~ ");")
     P(alert | log | write | innerHtml)
   }
   val arr_conv = {
@@ -35,14 +36,14 @@ object expresion {
     P(str | join | pop | push)
   }
   //val type = P("typeof" ~ )
-  val statement = P((var_decl | vasign | output | ret).rep)
+  val statement = P((var_decl|error|num|math|str|loop| func_decl| var_decl_f | var_dec_arr | vasign | output | ret  ).rep )
 
   val leftTag = P("<" ~ (!">" ~ AnyChar).rep(1).! ~ ">")
   val int = P(CharIn('0' to '9')).!.map(_.toInt)
   val expr = P(int ~ "+" ~ int)
   val len = P(lexical.letter).rep
-  val func_decl = P("function" ~ lexical.identifier ~ "(" ~ (lexical.identifier ~ ",").rep.? ~ ")" ~ "{" ~ statement ~ "}")
-  val ret = P("return" ~ lexical.identifier | maths.expr ~ ";")
+  val func_decl:fastparse.core.Parser[String] = P("function" ~ lexical.identifier ~ "(" ~ lexical.identifier~("," ~ lexical.identifier).rep.? ~ ")" ~"{" ~ statement ~ "}").!
+  val ret = P("return" ~ lexical.identifier | maths.expr |lexical.exp~ ";")
   val func_call = P(lexical.identifier ~ "(" ~ (lexical.identifier ~ ",").rep.? ~ ");")
 
   val str = {
@@ -58,7 +59,7 @@ object expresion {
     var concat = P(lexical.identifier ~ ".concat(" ~ "," ~ lexical.string ~ ");")
     val charat = P(lexical.identifier ~ ".charAt(" ~ maths.factor ~ ");")
     val charCodeat = P(lexical.identifier ~ ".charCodeAt(" ~ maths.factor ~ ");")
-    P(new_string | length | indexOf | search | slice | substr | replace | uc | lc | concat | charat | charCodeat)
+    P("var"~lexical.identifier~"="~(new_string | length | indexOf | search | slice | substr | replace | uc | lc | concat | charat | charCodeat))
   }
 
   val num = {
@@ -69,7 +70,7 @@ object expresion {
     val numb = P("number(" ~ lexical.identifier ~ ");")
     val parseint = P("parseInt(" ~ lexical.number ~ ");")
     val parsefloat = P("parseFloat(" ~ lexical.number ~ ");")
-    P(exp | fix | valof | numb | parseint | parsefloat | precision)
+    P(lexical.identifier~"="~ (exp | fix | valof | numb | parseint | parsefloat | precision))
   }
 
   val math = {
@@ -79,42 +80,44 @@ object expresion {
     val round = P("Math.round(" ~ maths.factor ~ ");")
     val ceil = P("Math.ceil(" ~ maths.factor ~ ");")
     val floor = P("Math.floor(" ~ maths.factor ~ ");")
-    P(max | min | random | round | ceil | floor)
+    P(lexical.identifier~"="~ (max | min | random | round | ceil | floor))
   }
 
-  val condition = {
+  val condition:fastparse.core.Parser[String] = {
     val If = P("if" ~ "(" ~ lexical.identifier ~ lexical.compOperator ~ lexical.number ~ ")" ~ "{" ~ statement ~ "}")
     val Else = P(("{" ~ statement ~ "}") | "")
     val Case = P("case" ~ lexical.number | lexical.string | lexical.letter ~ ":" ~ statement)
     val default = P("default:" ~ statement)
     val switch = P("switch(" ~ lexical.identifier ~ ")" ~ "{" ~ Case.rep ~ default ~ "}")
-    P(If | Else | switch)
+    P(If | Else | switch).!
 
   }
 
-  val loop = {
+  val loop :fastparse.core.Parser[String]= {
     var asignStat = P(lexical.identifier ~ "=" ~ maths.factor ~ ";")
     var compStat = P(lexical.identifier ~ lexical.compOperator ~ (lexical.identifier | lexical.string | lexical.number))
     var increStat = P((lexical.identifier ~ lexical.incredecre) | (lexical.identifier ~ lexical.asignOperator ~ maths.expr) ~ ";")
     val forL = P("for" ~ "(" ~ asignStat ~ compStat ~ increStat ~ ")" ~ "{" ~ statement ~ "}")
     var whileL = P("while" ~ "(" ~ compStat ~ ")" ~ "{" ~ statement ~ "}")
     val doWhile = P("do" ~ "{" ~ statement ~ "}" ~ "while" ~ "(" ~ compStat ~ ")" ~ ";")
-    P(forL | whileL | doWhile)
+    P(forL | whileL | doWhile).!
   }
 
-  val error = {
+  val error:fastparse.core.Parser[String] = {
     val trY = P("try" ~ "{" ~ statement ~ "}")
     val catcH = P("catch" ~ "(" ~ lexical.identifier ~ ")" ~ "{" ~ statement ~ "}")
     val throW = P("throw" ~ maths.expr | lexical.string)
     val finallY = P("finally" ~ "{" ~ statement ~ "}")
-    P(trY | catcH | throW | finallY)
+    P(trY | catcH | throW | finallY).!
   }
 
 
   def main(arg: Array[String]): Unit = {
     println("yeyyyyy")
-    println(arr_conv.parse("x.toJoin(\"*\");"))
-    println(func_call.parse("x(a,d,);"))
+    val filename = "fileopen.js"
+	  val fileContents = Source.fromFile(filename).getLines.mkString
+	  //println(fileContents)
+    println(statement.parse(fileContents))
     //println(.parse())
 
   }
