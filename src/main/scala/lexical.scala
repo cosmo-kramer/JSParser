@@ -1,10 +1,10 @@
-import fastparse.noApi._
-import WsApi._
-
 object WsApi extends fastparse.WhitespaceApi.Wrapper({
   import fastparse.all._
   (" " | "\n").rep;
 })
+
+import fastparse.noApi._
+import WsApi._
 
 object lexical {
   //all js lexical
@@ -58,5 +58,6 @@ object lexical {
     "try", "typeof", "var", "void", "volatile",
     "while", "with", "yield")
   val escapeSeq = P("\\" ~ CharsWhile(_ != ' ', min = 0)).!
+  val exp = P(identifier ~ (symbol ~ identifier).rep.?)
 
 }
